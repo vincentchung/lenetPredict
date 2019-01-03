@@ -12,20 +12,32 @@ import argparse
 import imutils
 import cv2
 import os
+import time
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-d", "--dataset", required=True,
-	help="path to input dataset of faces")
-ap.add_argument("-m", "--model", required=True,
-	help="path to output model")
+	help="path to input dataset of all images")
+ap.add_argument("-m", "--model")
 args = vars(ap.parse_args())
 
+output_model=args["model"]
+
+if(output_model==None):
+    tt=time.localtime()
+    timestr=time.strftime('%Y-%m-%d-%H-%M-%S', tt)
+    output_model=str(timestr)+".hdf5"
+
+print(output_model)
 # initialize the list of data and labels
 data = []
 labels = []
 
+label_list=[]
 size_width=64
+
+for file in os.listdir(args["dataset"]):
+    label_list.append(file)
 
 # loop over the input images
 for imagePath in sorted(list(paths.list_images(args["dataset"]))):
@@ -61,16 +73,17 @@ classWeight = classTotals.max() / classTotals
 	labels, test_size=0.20, stratify=labels, random_state=42)
 
 # initialize the model
+print("[INFO] compiling model...")
+#in this example there are only 2 type image in the database
+model = LeNet.build(width=size_width, height=size_width, depth=1, classes=len(label_list))
+model.compile(loss="binary_crossentropy", optimizer="adam",
+	metrics=["accuracy"])
+
 #print("[INFO] compiling model...")
 #model = LeNet.build(width=size_width, height=size_width, depth=1, classes=2)
-#model.compile(loss="binary_crossentropy", optimizer="adam",
+#opt = SGD(lr=0.01)
+#model.compile(loss="categorical_crossentropy", optimizer=opt,
 #	metrics=["accuracy"])
-
-print("[INFO] compiling model...")
-model = LeNet.build(width=size_width, height=size_width, depth=1, classes=2)
-opt = SGD(lr=0.01)
-model.compile(loss="categorical_crossentropy", optimizer=opt,
-	metrics=["accuracy"])
 
 # train the network
 print("[INFO] training network...")
@@ -85,4 +98,4 @@ print(classification_report(testY.argmax(axis=1),
 
 # save the model to disk
 print("[INFO] serializing network...")
-model.save(args["model"])
+model.save(output_model)
