@@ -33,11 +33,7 @@ print(output_model)
 data = []
 labels = []
 
-label_list=[]
 size_width=64
-
-for file in os.listdir(args["dataset"]):
-    label_list.append(file)
 
 # loop over the input images
 for imagePath in sorted(list(paths.list_images(args["dataset"]))):
@@ -52,8 +48,8 @@ for imagePath in sorted(list(paths.list_images(args["dataset"]))):
 	# labels list
 	label = imagePath.split(os.path.sep)[-2]
 	labels.append(label)
-	print(imagePath)
-	print("Label:"+label)
+	#print(imagePath)
+	#print("Label:"+label)
 
 # scale the raw pixel intensities to the range [0, 1]
 data = np.array(data, dtype="float") / 255.0
@@ -67,15 +63,21 @@ labels = np_utils.to_categorical(le.transform(labels), 2)
 classTotals = labels.sum(axis=0)
 classWeight = classTotals.max() / classTotals
 
+print("classTotals:"+str(classTotals)+",classWeight:"+str(classWeight)+"labels:"+str(len(classWeight)))
 # partition the data into training and testing splits using 80% of
 # the data for training and the remaining 20% for testing
+#random_state : int, RandomState instance or None, optional (default=None)
+#If int, random_state is the seed used by the random number generator;
+#If RandomState instance, random_state is the random number generator;
+#If None, the random number generator is the RandomState instance used by np.random.
+#
 (trainX, testX, trainY, testY) = train_test_split(data,
 	labels, test_size=0.20, stratify=labels, random_state=42)
 
 # initialize the model
 print("[INFO] compiling model...")
 #in this example there are only 2 type image in the database
-model = LeNet.build(width=size_width, height=size_width, depth=1, classes=len(label_list))
+model = LeNet.build(width=size_width, height=size_width, depth=1, classes=len(classWeight))
 model.compile(loss="binary_crossentropy", optimizer="adam",
 	metrics=["accuracy"])
 
