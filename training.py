@@ -2,6 +2,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from keras.preprocessing.image import img_to_array
+from keras.preprocessing.image import ImageDataGenerator
 from keras.utils import np_utils
 from keras.optimizers import SGD
 from imutils import paths
@@ -34,6 +35,8 @@ data = []
 labels = []
 
 size_width=64
+
+using_aug=1
 
 # loop over the input images
 for imagePath in sorted(list(paths.list_images(args["dataset"]))):
@@ -86,11 +89,20 @@ model.compile(loss="binary_crossentropy", optimizer="adam",
 #opt = SGD(lr=0.01)
 #model.compile(loss="categorical_crossentropy", optimizer=opt,
 #	metrics=["accuracy"])
-
 # train the network
 print("[INFO] training network...")
-H = model.fit(trainX, trainY, validation_data=(testX, testY),
-	class_weight=classWeight, batch_size=size_width, epochs=15, verbose=1)
+
+if(using_aug==1):
+    # construct the image generator for data augmentation
+    aug = ImageDataGenerator(rotation_range=30, width_shift_range=0.1,
+	   height_shift_range=0.1, shear_range=0.2, zoom_range=0.2,
+	   horizontal_flip=True, fill_mode="nearest")
+    H = model.fit_generator(aug.flow(trainX, trainY, batch_size=32),
+	   validation_data=(testX, testY), steps_per_epoch=len(trainX) // 32,
+	   epochs=15, verbose=1)
+else:
+    H = model.fit(trainX, trainY, validation_data=(testX, testY),
+	   class_weight=classWeight, batch_size=size_width, epochs=15, verbose=1)
 
 # evaluate the network
 print("[INFO] evaluating network...")
